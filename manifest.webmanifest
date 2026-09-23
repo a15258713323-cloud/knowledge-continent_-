@@ -1,0 +1,20 @@
+{
+  "name": "知识大陆 · 闯关学习",
+  "short_name": "知识大陆",
+  "description": "把教学大纲与学习资料变成闯关游戏，离线答题、错题本、知识图谱一体化",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0E1F",
+  "theme_color": "#0A0E1F",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
