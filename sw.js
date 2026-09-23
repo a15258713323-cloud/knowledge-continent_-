@@ -8,7 +8,7 @@
  *   两个目标都满足。
  * ========================================================================== */
 
-const VERSION = 'kc-v1.0.4';
+const VERSION = 'kc-v1.0.5';
 const STATIC_CACHE = `${VERSION}-static`;
 const PACK_CACHE = `${VERSION}-pack`;
 
@@ -28,6 +28,7 @@ const STATIC_ASSETS = [
   './css/style.css',
   './js/app.js',
   './js/store.js',
+  './js/backup.js',
   './js/theme.js',
   './js/data.js',
   './js/render.js',

@@ -1,12 +1,12 @@
 {
  "schemaVersion": 1,
- "packId": "ml_dl_review",
- "version": "1.0.0",
- "title": "机器学习与深度学习",
- "updatedAt": "2026-09-23T17:59:14+08:00",
+ "packId": "knowledge_continent",
+ "version": "1.1.0",
+ "title": "知识大陆",
+ "updatedAt": "2026-09-23T20:30:36+08:00",
  "levelsUrl": "levels.json",
- "sha256": "cabbc3b33af4b5da52348b0ab5c436823d6e77d03fc9e25917842e8d15e20865",
- "bytes": 694551,
+ "sha256": "40d24d4e2490ed154d626c6168810d8ccf1e1f8fc60df9e4613022a0e40ffcc8",
+ "bytes": 694440,
  "summary": {
   "stages": 1,
   "levels": 14,

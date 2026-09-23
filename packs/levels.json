@@ -1,13 +1,14 @@
 {
  "meta": {
   "schemaVersion": 1,
-  "packId": "ml_dl_review",
-  "version": "1.0.0",
-  "title": "机器学习与深度学习",
-  "description": "试点大陆：基于《第三阶段考前复习资料 · 机器学习 + 深度学习》生成",
-  "generatedAt": "2026-09-23T17:59:14+08:00",
+  "packId": "knowledge_continent",
+  "version": "1.1.0",
+  "title": "知识大陆",
+  "description": "把学习资料变成可以闯关的知识地图",
+  "generatedAt": "2026-09-23T20:30:36+08:00",
   "generator": "知识大陆出题工作台",
-  "sourceDoc": "第三阶段复习资料/第三阶段复习_机器学习与深度学习.html"
+  "sourceDoc": "",
+  "stageCount": 1
  },
  "config": {
   "passRate": 0.6,

@@ -9,6 +9,9 @@ import {
   revertToBuiltin, stages,
 } from './data.js';
 import { applyTheme, resolveTheme, themeLabel } from './theme.js';
+import {
+  exportSave, backupFileName, readSaveFile, mergeState, applyMerged, currentStats,
+} from './backup.js';
 
 export function viewSettings() {
   const s = get();
@@ -111,6 +114,27 @@ export function viewSettings() {
     '不填也能用：主观题会降级为本地关键词评分，且主观题本就不计入通关分数。',
     h('br'),
     'Key 只存在本机浏览器里，不会上传到任何服务器。'
+  ));
+
+  /* ================= 存档备份 ================= */
+  const st = currentStats();
+  node.appendChild(h('div', { class: 'sec-title' }, '💾 存档备份（换设备用）'));
+  node.appendChild(h('div', { class: 'groupcard' },
+    row('📊', '本机存档',
+      st.totalXp ? `${st.totalXp} 经验 · ${st.stars} 星 · 通关 ${st.levels} 关` : '空存档'),
+    tapRow('⬆️', '导出存档', '生成 JSON 文件', () => {
+      try {
+        const d = exportSave();
+        toast(`已导出 ${backupFileName(d.state.playerName)}`, 'ok');
+      } catch (e) { toast(`导出失败：${e.message}`, ''); }
+    }),
+    tapRow('⬇️', '导入存档', '智能合并', () => pickSaveFile())
+  ));
+  node.appendChild(h('div', { class: 'tiny faint', style: { padding: '8px 2px 0', lineHeight: '1.7' } },
+    '进度只存在本机浏览器，换手机或清缓存会丢。导出后把文件发给自己即可搬迁。',
+    h('br'),
+    '导入按「取两边更好的」合并：经验/星星取高、通关取更优、错题本与成就取并集；',
+    '显示设置与 API Key 保留本机。导出文件里不含 API Key。'
   ));
 
   /* ================= 其他 ================= */
@@ -249,6 +273,50 @@ export function viewSettings() {
       })
     );
     openSheet({ title: '修改昵称', body });
+  }
+
+  function pickSaveFile() {
+    const file = h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' } });
+    document.body.appendChild(file);
+    file.addEventListener('change', async () => {
+      const f = file.files && file.files[0];
+      file.remove();
+      if (!f) return;
+
+      let parsed;
+      try {
+        parsed = await readSaveFile(f);
+      } catch (e) {
+        toast(`导入失败：${e.message}`, '');
+        return;
+      }
+
+      // 先试算合并结果，让用户看清会发生什么再确认
+      const before = currentStats();
+      const { delta } = mergeState(get(), parsed.state);
+      const from = parsed.meta.playerName || '未命名玩家';
+      const when = parsed.meta.exportedAt ? `\n导出时间：${parsed.meta.exportedAt.slice(0, 10)}` : '';
+      const noChange = !delta.xpGain && !delta.starGain && !delta.levelsImproved
+        && !delta.pointsImproved && !delta.newWrong && !delta.newAchievements;
+
+      confirmDialog('导入存档（智能合并）',
+        `存档来自：${from}${when}\n\n`
+        + (noChange
+          ? '本机进度已经更好或持平，合并不改变任何数据。\n'
+          : '合并后预计增加：\n'
+            + `　经验 +${delta.xpGain} · 星星 +${delta.starGain}\n`
+            + `　通关记录改善 ${delta.levelsImproved} 关 · 知识点 ${delta.pointsImproved} 个\n`
+            + `　错题 +${delta.newWrong} · 成就 +${delta.newAchievements}\n`)
+        + `\n当前本机：${before.totalXp} 经验 / ${before.stars} 星 / 通关 ${before.levels} 关\n`
+        + `设置与 API Key 保留本机，不会被覆盖。`,
+        () => {
+          const r = applyMerged(parsed.state);
+          toast(`合并完成：+${r.delta.xpGain} 经验 / +${r.delta.starGain} 星`, 'ok');
+          setTimeout(() => location.reload(), 1100);
+        },
+        '确认合并');
+    });
+    file.click();
   }
 
   function pickFile() {
