@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark" data-warm="0" data-motion="on">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0A0E1F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="知识大陆">
+<meta name="format-detection" content="telephone=no">
+<title>知识大陆 · 闯关学习</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="stars"></div>
+<div class="glowbg"></div>
+
+<div id="root" class="app">
+  <div class="empty">
+    <div class="e">🌌</div>
+    <div>知识大陆</div>
+    <div class="tiny" style="margin-top:8px">正在启动…</div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<noscript>
+  <div class="empty">
+    <div class="e">⚠️</div>
+    <div>需要启用 JavaScript 才能运行</div>
+  </div>
+</noscript>
+
+<script type="module" src="js/app.js"></script>
+<script>
+// 离线缓存注册（Service Worker 仅在 https 或 localhost 下可用）
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      console.log('[知识大陆] 离线缓存已就绪', reg.scope);
+    }).catch(function (e) {
+      console.warn('[知识大陆] 离线缓存注册失败（不影响使用）', e.message);
+    });
+  });
+}
+</script>
+</body>
+</html>
