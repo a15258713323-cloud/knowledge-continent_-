@@ -595,6 +595,80 @@ table.cb-table th:first-child, table.cb-table td:first-child { position: sticky;
   border-left: 3px solid var(--purple); padding-left: 14px;
   margin: 0 0 14px; color: var(--text-dim); font-style: italic;
 }
+
+/* ---------------------------------------------------------------- 公式
+   思路：不引入数学渲染库（离线包太重），而是
+     ① 公式用**衬线数学字体**，和正文的无衬线汉字形成对比，一眼能认出来
+     ② 公式块的行分「表达式」和「说明」，样式不同
+     ③ 上下标正确渲染（θᵢ₊₁ 不会被读成 θi 加 1）
+   字体栈只影响拉丁字母与数学符号，汉字会自动回落到后面的中文衬线。 */
+
+.fml,
+.fml-row.expr {
+  font-family: "Cambria Math", Cambria, "Latin Modern Math", "STIX Two Math",
+               Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
+}
+
+/* 行内公式：从汉字里跳出来，但别太抢眼 */
+.fml {
+  font-size: 1.05em;
+  letter-spacing: .2px;
+  padding: 0 4px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--c1) 8%, transparent);
+  color: color-mix(in srgb, var(--text) 92%, var(--c1));
+}
+
+/* 公式块（教材的 <div class="fm">） */
+.cb-formula {
+  margin: 0 0 14px;
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  border-left: 3px solid color-mix(in srgb, var(--c1) 55%, transparent);
+  background: color-mix(in srgb, var(--c1) 7%, transparent);
+}
+.fml-row { display: block; }
+.fml-row + .fml-row { margin-top: 3px; }
+
+.fml-row.expr {
+  font-size: 15.5px;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: nowrap;            /* 公式不折行，折了就看不出结构 */
+  overflow-x: auto;               /* 长公式可以横向滑 */
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+/* 含中文的表达式行（如「其中 T 表示叶子数」）还是正常折行 */
+.fml-row.expr.cjk {
+  white-space: normal;
+  overflow-x: visible;
+  font-family: inherit;
+  font-size: 14.5px;
+}
+
+.fml-row.label {
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-faint);
+}
+/* 第一行说明当小标题用（教材里就是公式的名字） */
+.fml-row.label:first-child {
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+/* 上下标：尺寸小一点，且不要撑开行高 */
+sub, sup {
+  font-size: .72em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+sup { top: -.5em; }
+sub { bottom: -.25em; }
+.cb-formula sub, .cb-formula sup { font-size: .68em; }
+
 .cb-divider { height: 1px; background: var(--line); margin: var(--xl) 0; }
 
 .cb-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 0 0 var(--lg); }

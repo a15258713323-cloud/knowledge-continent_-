@@ -5,6 +5,7 @@ import { get, set } from './store.js';
 import { levelById, pointsOfLevel, quizById, getConfig } from './data.js';
 import { judge, aiGrade, localGrade, TYPE_LABEL, difficultyStars } from './judge.js';
 import { buildSession, recordAttempt, pointMastery } from './engine.js';
+import { renderMathText } from './render.js';
 
 /* 上一次结算结果，供 A6 结算页读取 */
 export const lastResult = { current: null };
@@ -145,7 +146,7 @@ export function viewQuiz({ levelId, query }) {
       it.pointName ? h('span', { class: 'tiny faint', text: it.pointName }) : null
     ));
 
-    body.appendChild(h('div', { class: 'stem', text: q.stem }));
+    body.appendChild(h('div', { class: 'stem' }, renderMathText(q.stem)));
 
     // 按题型渲染作答区
     const area = h('div');
@@ -189,7 +190,7 @@ export function viewQuiz({ levelId, query }) {
     (q.options || []).forEach((o) => {
       const node_ = tapable(h('div', { class: 'opt', dataset: { key: o.key } },
         h('span', { class: 'k', text: o.key }),
-        h('span', { class: 'body' }, h('span', { text: o.text })),
+        h('span', { class: 'body' }, h('span', null, renderMathText(o.text))),
         h('span', { class: 'mark' })
       ), () => {
         if (phase !== 'answering') return;
@@ -396,7 +397,7 @@ export function viewQuiz({ levelId, query }) {
       fb.appendChild(h('div', { class: 'explain' },
         h('b', { text: '💡 解析' }),
         h('br'),
-        h('span', { text: q.explanation })
+        h('span', null, renderMathText(q.explanation))
       ));
     }
 

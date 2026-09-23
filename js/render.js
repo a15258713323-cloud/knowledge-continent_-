@@ -14,6 +14,55 @@ function el(tag, cls, text) {
   return n;
 }
 
+/* ---------------------------------------------------------------- 行内公式 */
+
+/**
+ * 公式识别的「强信号」。
+ *
+ * 只靠"含字母数字"会把英文单词也当成公式，所以要求出现真正的数学痕迹：
+ * 等号、数学运算符、上下标字符、^ 或 _、以及「字母+半角括号」的函数形态。
+ */
+const MATH_SIGNAL = new RegExp(
+  '[=＝]'                                   // 等号
+  + '|[Σ√∂∇∫∏∑±×÷·∞≈≠≤≥→←]'                 // 数学运算符
+  + '|[\\^_]'                               // 上标/下标写法
+  + '|[\\u2070-\\u209f\\u00b2\\u00b3\\u00b9\\u1d40]'   // ² ³ ᵀ ᵢ ⁽ⁱ⁾ 这类
+  + '|[A-Za-z]\\s*\\('                      // f(x) 形态
+);
+
+// 中文 + 中文标点 + 全角字符 —— 用它们把文本切成「中文段 / 非中文段」
+const SPLIT_CJK = /([\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+)/;
+
+/** 这个非中文片段看起来是不是公式 */
+function looksLikeMath(piece) {
+  const t = String(piece || '').trim();
+  if (t.length < 2 || t.length > 80) return false;
+  if (!/[A-Za-z0-9\u0370-\u03ff]/.test(t)) return false;
+  return MATH_SIGNAL.test(t);
+}
+
+/** 把一段纯文本按公式切开，公式部分套上数学字体 */
+function appendWithMath(frag, text) {
+  const parts = String(text).split(SPLIT_CJK);
+  for (const p of parts) {
+    if (!p) continue;
+    if (looksLikeMath(p)) {
+      // 首尾空格放在 span 外面，免得公式和相邻文字粘住
+      const m = p.match(/^(\s*)([\s\S]*?)(\s*)$/);
+      if (m[1]) frag.appendChild(document.createTextNode(m[1]));
+      if (m[2]) frag.appendChild(el('span', 'fml', m[2]));
+      if (m[3]) frag.appendChild(document.createTextNode(m[3]));
+    } else {
+      frag.appendChild(document.createTextNode(p));
+    }
+  }
+}
+
+/** 独立的公式片段（来自解析层的 math span） */
+function mathSpan(text) {
+  return el('span', 'fml', text);
+}
+
 /* ---------------------------------------------------------------- 行内 span */
 
 /**
@@ -29,6 +78,12 @@ export function renderSpans(spans) {
 
     if (t === 'code') {
       frag.appendChild(el('code', 'cb-code-inline', text));
+    } else if (t === 'sub') {
+      frag.appendChild(el('sub', null, text));
+    } else if (t === 'sup') {
+      frag.appendChild(el('sup', null, text));
+    } else if (t === 'math') {
+      frag.appendChild(mathSpan(text));
     } else if (t === 'bold') {
       frag.appendChild(el('b', null, text));
     } else if (t === 'italic') {
@@ -36,19 +91,50 @@ export function renderSpans(spans) {
     } else if (t === 'underline') {
       frag.appendChild(el('u', null, text));
     } else {
-      // 普通文本里的换行
+      // 普通文本：先按换行拆，再按公式拆
       const parts = text.split('\n');
       parts.forEach((p, i) => {
         if (i > 0) frag.appendChild(document.createElement('br'));
-        if (p) frag.appendChild(document.createTextNode(p));
+        if (p) appendWithMath(frag, p);
       });
     }
   });
   return frag;
 }
 
+/** 给纯文本字符串用（题干、选项、解析这些没有 span 结构的地方） */
+export function renderMathText(text) {
+  const frag = document.createDocumentFragment();
+  appendWithMath(frag, String(text == null ? '' : text));
+  return frag;
+}
+
 export function spansText(spans) {
   return (spans || []).map((s) => s.s || '').join('');
+}
+
+/* ---------------------------------------------------------------- 公式块 */
+
+/**
+ * 公式块（教材的 <div class="fm">）。
+ *
+ * 每行分两类：
+ *   label = 公式的说明文字（小字、灰）
+ *   expr  = 表达式本体（数学字体、稍大）
+ * 长公式不折行、可横向滑动 —— 折了就看不出结构了。
+ */
+function renderFormula(block) {
+  const box = el('div', 'cb-formula');
+  (block.lines || []).forEach((ln) => {
+    const isLabel = ln.kind === 'label';
+    const text = spansText(ln.spans);
+    // 表达式行默认不折行（折了看不出结构），但含中文的说明性行要正常折行
+    const hasCJK = /[\u4e00-\u9fff]/.test(text);
+    const row = el('div', `fml-row ${isLabel ? 'label' : 'expr'}${hasCJK ? ' cjk' : ''}`);
+    row.appendChild(renderSpans(ln.spans));
+    box.appendChild(row);
+  });
+  return box;
 }
 
 /* ---------------------------------------------------------------- 代码块 */
@@ -204,6 +290,8 @@ export function renderBlock(block) {
     q.appendChild(renderSpans(block.spans));
     return q;
   }
+
+  if (t === 'formula') return renderFormula(block);
 
   if (t === 'divider') return el('div', 'cb-divider');
 

@@ -4,6 +4,7 @@ import { h, renderNav, topbar, fmtDate, emptyState } from './ui.js';
 import { get } from './store.js';
 import { quizById, levelById } from './data.js';
 import { TYPE_LABEL } from './judge.js';
+import { renderMathText } from './render.js';
 
 export function viewWrong() {
   const s = get();
@@ -69,7 +70,8 @@ export function viewWrong() {
           h('span', { class: 'spacer' }),
           w.corrected ? h('span', { class: 'tag ok', text: '✅ 已订正' }) : null
         ),
-        h('div', { style: { fontSize: '14px', lineHeight: '1.6', marginTop: '7px' }, text: q.stem }),
+        h('div', { style: { fontSize: '14px', lineHeight: '1.6', marginTop: '7px' } },
+          renderMathText(q.stem)),
         h('div', { class: 'ans-line' },
           wrongAns ? h('span', { class: 'tag danger', text: `我的答案 ${wrongAns}` }) : null,
           rightAns ? h('span', { class: 'tag ok', text: `正确 ${rightAns}` }) : null
