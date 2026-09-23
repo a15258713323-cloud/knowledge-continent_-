@@ -1,7 +1,8 @@
 /* A11 设置页 */
 
 import {
-  h, topbar, toast, openSheet, closeSheet, confirmDialog, tapable,
+  h, topbar, toast, toastOk, toastError,
+  openSheet, closeSheet, confirmDialog, tapable, pickFile,
 } from './ui.js';
 import { get, set, setSetting, reset, getPackOverride } from './store.js';
 import {
@@ -12,6 +13,16 @@ import { applyTheme, resolveTheme, themeLabel } from './theme.js';
 import {
   exportSave, backupFileName, readSaveFile, mergeState, applyMerged, currentStats,
 } from './backup.js';
+
+/**
+ * 文件选择器的过滤条件。
+ *
+ * 手机上**不要卡 accept**：iOS 的文件选择器认不出扩展名映射时，
+ * 会把列表里的文件全部置灰，用户根本点不动（这就是"上传不了文件"的由来）。
+ * 放开之后靠内容校验兜底，报错也是一句中文。
+ */
+const PICK_ACCEPT = /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent || '')
+  ? '*/*' : '.json,application/json';
 
 export function viewSettings() {
   const s = get();
@@ -31,11 +42,11 @@ export function viewSettings() {
       const r = await checkUpdate();
       if (!r.ok) {
         el.querySelector('.v').textContent = '';
-        toast('无法连接更新源（未联网或未部署），当前使用本地关卡包', '');
+        toastError(r.error, '连不上更新源，当前继续使用本地关卡包');
         return;
       }
       el.querySelector('.v').textContent = `v${r.remote}`;
-      if (!r.hasUpdate) { toast(`已是最新版本 v${r.local}`, 'ok'); return; }
+      if (!r.hasUpdate) { toastOk(`已是最新版本 v${r.local}`); return; }
       const sm = r.summary || {};
       confirmDialog('发现新版本',
         `远端 v${r.remote}（当前 v${r.local}）\n` +
@@ -43,18 +54,24 @@ export function viewSettings() {
         async () => {
           try {
             const ns = await downloadUpdate(r.url);
-            toast(`更新完成：v${ns.version}`, 'ok');
+            toastOk(`更新完成：v${ns.version}`);
             setTimeout(() => location.reload(), 900);
-          } catch (e) { toast(`更新失败：${e.message}`, ''); }
+          } catch (e) { toastError(e, '更新失败了，等会儿再试'); }
         }, '立即更新');
     }),
-    tapRow('📂', '从文件导入关卡包', '', () => pickFile()),
+    tapRow('📂', '从文件导入关卡包', '.json', () => onImportPack()),
     usingImport ? tapRow('↩️', '恢复内置关卡包', '', (el) => {
       confirmDialog('恢复内置关卡包',
         '将丢弃已导入的关卡包，回到应用自带的版本。学习进度不受影响。',
-        () => { revertToBuiltin(); toast('已恢复内置关卡包', 'ok'); setTimeout(() => location.reload(), 700); },
+        () => { revertToBuiltin(); toastOk('已恢复内置关卡包'); setTimeout(() => location.reload(), 700); },
         '恢复');
     }, 'danger') : null
+  ));
+  node.appendChild(h('div', { class: 'tiny faint', style: { padding: '8px 2px 0', lineHeight: '1.7' } },
+    '关卡包是 .json 文件（工作台生成在 packs 目录下的 levels.json）。',
+    h('br'),
+    '学习资料（HTML / Markdown / PDF 等）不是在这里导入的：',
+    '要先在电脑端用「出题工作台」投料生成关卡包，再把生成的 .json 拿过来。'
   ));
 
   /* ================= 显示 ================= */
@@ -125,8 +142,8 @@ export function viewSettings() {
     tapRow('⬆️', '导出存档', '生成 JSON 文件', () => {
       try {
         const d = exportSave();
-        toast(`已导出 ${backupFileName(d.state.playerName)}`, 'ok');
-      } catch (e) { toast(`导出失败：${e.message}`, ''); }
+        toastOk(`已导出 ${backupFileName(d.state.playerName)}`);
+      } catch (e) { toastError(e, '导出失败了，检查一下浏览器是否允许下载'); }
     }),
     tapRow('⬇️', '导入存档', '智能合并', () => pickSaveFile())
   ));
@@ -275,66 +292,55 @@ export function viewSettings() {
     openSheet({ title: '修改昵称', body });
   }
 
-  function pickSaveFile() {
-    const file = h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' } });
-    document.body.appendChild(file);
-    file.addEventListener('change', async () => {
-      const f = file.files && file.files[0];
-      file.remove();
-      if (!f) return;
+  async function pickSaveFile() {
+    const f = await pickFile({ accept: PICK_ACCEPT });
+    if (!f) return;
 
-      let parsed;
-      try {
-        parsed = await readSaveFile(f);
-      } catch (e) {
-        toast(`导入失败：${e.message}`, '');
-        return;
-      }
+    let parsed;
+    try {
+      parsed = await readSaveFile(f);
+    } catch (e) {
+      toastError(e, '这个文件不是「知识大陆」的存档');
+      return;
+    }
 
-      // 先试算合并结果，让用户看清会发生什么再确认
-      const before = currentStats();
-      const { delta } = mergeState(get(), parsed.state);
-      const from = parsed.meta.playerName || '未命名玩家';
-      const when = parsed.meta.exportedAt ? `\n导出时间：${parsed.meta.exportedAt.slice(0, 10)}` : '';
-      const noChange = !delta.xpGain && !delta.starGain && !delta.levelsImproved
-        && !delta.pointsImproved && !delta.newWrong && !delta.newAchievements;
+    // 先试算合并结果，让用户看清会发生什么再确认
+    const before = currentStats();
+    const { delta } = mergeState(get(), parsed.state);
+    const from = parsed.meta.playerName || '未命名玩家';
+    const when = parsed.meta.exportedAt ? `\n导出时间：${parsed.meta.exportedAt.slice(0, 10)}` : '';
+    const noChange = !delta.xpGain && !delta.starGain && !delta.levelsImproved
+      && !delta.pointsImproved && !delta.newWrong && !delta.newAchievements;
 
-      confirmDialog('导入存档（智能合并）',
-        `存档来自：${from}${when}\n\n`
-        + (noChange
-          ? '本机进度已经更好或持平，合并不改变任何数据。\n'
-          : '合并后预计增加：\n'
-            + `　经验 +${delta.xpGain} · 星星 +${delta.starGain}\n`
-            + `　通关记录改善 ${delta.levelsImproved} 关 · 知识点 ${delta.pointsImproved} 个\n`
-            + `　错题 +${delta.newWrong} · 成就 +${delta.newAchievements}\n`)
-        + `\n当前本机：${before.totalXp} 经验 / ${before.stars} 星 / 通关 ${before.levels} 关\n`
-        + `设置与 API Key 保留本机，不会被覆盖。`,
-        () => {
-          const r = applyMerged(parsed.state);
-          toast(`合并完成：+${r.delta.xpGain} 经验 / +${r.delta.starGain} 星`, 'ok');
-          setTimeout(() => location.reload(), 1100);
-        },
-        '确认合并');
-    });
-    file.click();
+    confirmDialog('导入存档（智能合并）',
+      `存档来自：${from}${when}\n\n`
+      + (noChange
+        ? '本机进度已经更好或持平，合并不改变任何数据。\n'
+        : '合并后预计增加：\n'
+          + `　经验 +${delta.xpGain} · 星星 +${delta.starGain}\n`
+          + `　通关记录改善 ${delta.levelsImproved} 关 · 知识点 ${delta.pointsImproved} 个\n`
+          + `　错题 +${delta.newWrong} · 成就 +${delta.newAchievements}\n`)
+      + `\n当前本机：${before.totalXp} 经验 / ${before.stars} 星 / 通关 ${before.levels} 关\n`
+      + `设置与 API Key 保留本机，不会被覆盖。`,
+      () => {
+        const r = applyMerged(parsed.state);
+        toastOk(`合并完成：+${r.delta.xpGain} 经验 / +${r.delta.starGain} 星`);
+        setTimeout(() => location.reload(), 1100);
+      },
+      '确认合并');
   }
 
-  function pickFile() {
-    const file = h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' } });
-    document.body.appendChild(file);
-    file.addEventListener('change', async () => {
-      const f = file.files && file.files[0];
-      file.remove();
-      if (!f) return;
-      try {
-        await importPack(f);
-        toast('关卡包导入成功，正在重新加载…', 'ok');
-        setTimeout(() => location.reload(), 900);
-      } catch (e) {
-        toast(`导入失败：${e.message}`, '');
-      }
-    });
-    file.click();
+  async function onImportPack() {
+    const f = await pickFile({ accept: PICK_ACCEPT });
+    if (!f) return;
+    toast('正在读取关卡包…');
+    try {
+      await importPack(f);
+      toastOk('关卡包导入成功，正在重新加载…');
+      setTimeout(() => location.reload(), 900);
+    } catch (e) {
+      toastError(e, '关卡包导入失败，请确认选的是 .json 关卡包文件');
+    }
   }
 
   return {

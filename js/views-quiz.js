@@ -1,6 +1,6 @@
 /* A5 答题页（核心）—— 逐题作答、实时判定、即时反馈 */
 
-import { h, toast, confirmDialog, tapable } from './ui.js';
+import { h, toast, toastError, confirmDialog, tapable } from './ui.js';
 import { get, set } from './store.js';
 import { levelById, pointsOfLevel, quizById, getConfig } from './data.js';
 import { judge, aiGrade, localGrade, TYPE_LABEL, difficultyStars } from './judge.js';
@@ -445,7 +445,7 @@ export function viewQuiz({ levelId, query }) {
         graded = await aiGrade(q, text, settings);
       } catch (e) {
         graded = null;
-        toast(`AI 批改不可用（${e.message}），已改用本地评分`, '');
+        toastError(e, 'AI 批改暂时用不了，已改用本地评分');
       }
     }
     if (!graded) {

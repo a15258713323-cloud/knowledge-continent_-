@@ -5,6 +5,7 @@
 import { load, get, subscribe } from './store.js';
 import { loadPack, applyStageColors, stages, levelById, getIndex } from './data.js';
 import { startThemeWatcher, applyTheme } from './theme.js';
+import { friendlyError, errorDetail } from './ui.js';
 
 import { viewOnboard } from './views-onboard.js';
 import { viewMap } from './views-map.js';
@@ -56,14 +57,46 @@ function matchRoute(seg) {
 
 let currentCleanup = null;
 
-function renderError(err) {
+/**
+ * 错误页。
+ *
+ * 主要位置给人话，技术细节折叠起来（用户不需要看堆栈，
+ * 但真出问题时又得有地方能翻出来）。
+ */
+function renderError(err, hint) {
   root.innerHTML = '';
-  root.appendChild(div('empty', {},
+
+  const friendly = friendlyError(err, '页面出了点问题，刷新一下再试');
+  const detail = errorDetail(err);
+
+  const retry = el('button', 'btn', '重新加载');
+  retry.onclick = () => location.reload();
+
+  const kids = [
     el('div', 'e', '😵'),
-    el('div', null, '出错了'),
-    el('div', 'tiny', err.message || String(err)),
-    el('div', 'tiny faint', '提示：浏览器可玩版需要通过本地服务打开，不要直接双击 index.html'),
-  ));
+    el('div', null, '出了点问题'),
+    el('div', 'tiny', friendly),
+  ];
+  if (hint) kids.push(el('div', 'tiny faint', hint));
+
+  if (detail && detail !== friendly) {
+    const box = el('div', 'err-detail');
+    box.style.display = 'none';
+    box.textContent = detail;
+
+    const toggle = el('button', 'link-btn', '查看技术细节');
+    toggle.onclick = () => {
+      const show = box.style.display === 'none';
+      box.style.display = show ? 'block' : 'none';
+      toggle.textContent = show ? '收起技术细节' : '查看技术细节';
+    };
+    const actions = div('err-actions', {}, retry, toggle);
+    kids.push(actions, box);
+  } else {
+    kids.push(div('err-actions', {}, retry));
+  }
+
+  root.appendChild(div('empty', {}, kids));
 }
 
 function el(tag, cls, text) {
@@ -105,7 +138,7 @@ function render() {
     out = hit.fn(hit.params) || {};
   } catch (e) {
     console.error(e);
-    renderError(e);
+    renderError(e, '可以返回地图页继续，或点下面的按钮重新加载。');
     return;
   }
 
@@ -150,7 +183,8 @@ async function boot() {
     await loadPack();
   } catch (e) {
     console.error(e);
-    renderError(new Error(`${e.message}\n\n请确认已在 knowledge_continent_app 目录下启动本地服务（见 启动游戏.bat）。`));
+    renderError(e, '浏览器可玩版要通过本地服务或线上地址打开，不要直接双击 index.html'
+      + '（见 启动游戏.bat）。');
     return;
   }
 

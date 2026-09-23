@@ -126,16 +126,77 @@ export async function loadPack() {
   }
 }
 
-/** 从用户选择的文件导入关卡包 */
+/**
+ * 从用户选择的文件导入关卡包。
+ *
+ * 关卡包只能是 JSON —— 因为它就是这个应用的数据格式（结构见《技术设计文档》§4.4）。
+ * 学习资料（HTML / Markdown / PDF 等）不是在这里导入的：
+ * 那些要先在电脑端的「出题工作台」里投料、出题、生成关卡包，再把生成的 JSON 拿过来。
+ *
+ * 这里把校验拆成几步，每一步都给一句正常人看得懂的中文，
+ * 而不是把 JSON.parse 的英文报错直接甩给用户。
+ */
 export async function importPack(file) {
-  const text = await file.text();
-  const data = JSON.parse(text);
-  if (!data.stages || !Array.isArray(data.stages)) {
-    throw new Error('文件格式不对：缺少 stages 字段');
+  if (!file) throw new Error('没有选中文件，请重新选一次');
+
+  const name = String(file.name || '');
+  const dot = name.lastIndexOf('.');
+  const ext = dot > 0 ? name.slice(dot).toLowerCase() : '';
+
+  if (ext && ext !== '.json') {
+    const isMaterial = ['.html', '.htm', '.md', '.markdown', '.txt', '.pdf', '.docx'].includes(ext);
+    throw new Error(
+      `你选的是「${ext}」文件，这里只能导入 .json 关卡包。\n`
+      + (isMaterial
+        ? '学习资料不是在这里导入的 —— 请到电脑端用「出题工作台」投料生成关卡包，再拿生成的 .json 来导入。'
+        : '请确认选的是关卡包文件。')
+    );
   }
-  if (data.meta && data.meta.schemaVersion > SCHEMA_VERSION) {
-    throw new Error(`关卡包结构版本 v${data.meta.schemaVersion} 高于本应用支持的 v${SCHEMA_VERSION}，请升级应用`);
+
+  let text;
+  try {
+    text = await file.text();
+  } catch (e) {
+    throw new Error('读不到这个文件，可能已损坏或没有访问权限');
   }
+
+  if (!text.trim()) throw new Error('这个文件是空的');
+
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    throw new Error(
+      '这个文件不是有效的 JSON，无法解析。\n'
+      + '常见原因：选错了文件、下载没完成、或者被编辑器改坏了。'
+    );
+  }
+
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('关卡包应该是一个 JSON 对象，这个文件不是');
+  }
+  if (!Array.isArray(data.stages)) {
+    throw new Error(
+      '这是一个 JSON 文件，但不像是关卡包（缺少 stages 字段）。\n'
+      + '如果你是从工作台导出的，请选 packs 目录下的 levels.json。'
+    );
+  }
+  if (!data.stages.length) {
+    throw new Error('这个关卡包里一块大陆都没有，可能是生成失败了');
+  }
+  for (const st of data.stages) {
+    if (!st || !Array.isArray(st.levels)) {
+      throw new Error(`关卡包结构不对：大陆「${(st && st.name) || '未命名'}」缺少 levels 字段`);
+    }
+  }
+  const ver = Number((data.meta && data.meta.schemaVersion) || 0);
+  if (ver > SCHEMA_VERSION) {
+    throw new Error(
+      `这个关卡包的结构版本是 v${ver}，比当前应用支持的 v${SCHEMA_VERSION} 更新。\n`
+      + '请先更新应用（在「关卡包」里点检查更新）。'
+    );
+  }
+
   setPackOverride(data);
   pack = data;
   index = buildIndex(pack);

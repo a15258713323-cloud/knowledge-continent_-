@@ -1,6 +1,6 @@
 /* A1 启动引导页 */
 
-import { h, toast } from './ui.js';
+import { h, toast, toastOk, toastError } from './ui.js';
 import { get, set } from './store.js';
 import { stages, packSummary, checkUpdate, downloadUpdate } from './data.js';
 
@@ -35,17 +35,17 @@ export function viewOnboard() {
       const r = await checkUpdate();
       checkBtn.disabled = false;
       checkBtn.textContent = '🔄 检查更新';
-      if (!r.ok) { toast('无法连接更新源，当前使用本地关卡包', ''); return; }
-      if (!r.hasUpdate) { toast(`已是最新版本 v${r.local}`, 'ok'); return; }
+      if (!r.ok) { toastError(r.error, '连不上更新源，当前继续使用本地关卡包'); return; }
+      if (!r.hasUpdate) { toastOk(`已是最新版本 v${r.local}`); return; }
       const s = r.summary || {};
       if (confirm(`发现新版本 v${r.remote}（当前 v${r.local}）\n` +
         `大陆 ${s.stages || '-'} / 关卡 ${s.levels || '-'} / 知识点 ${s.points || '-'} / 题目 ${s.quizzes || '-'}\n\n是否立即更新？`)) {
         try {
           const ns = await downloadUpdate(r.url);
-          toast(`更新完成：v${ns.version}`, 'ok');
+          toastOk(`更新完成：v${ns.version}`);
           setTimeout(() => location.reload(), 900);
         } catch (e) {
-          toast(`更新失败：${e.message}`, '');
+          toastError(e, '更新失败了，等会儿再试');
         }
       }
     },

@@ -888,17 +888,36 @@ table.cb-table th:first-child, table.cb-table td:first-child { position: sticky;
   pointer-events: none; width: calc(100% - 40px); max-width: 420px;
 }
 .toast {
+  display: flex; align-items: flex-start; gap: 8px;
   background: var(--panel-solid); border: 1px solid var(--line);
-  border-radius: var(--r-full); padding: 10px 18px;
+  border-radius: var(--r-md); padding: 10px 15px;
   font-size: 13.5px; box-shadow: 0 6px 24px rgba(0,0,0,.35);
   animation: toastin .28s cubic-bezier(.33,1,.68,1);
-  text-align: center;
+  text-align: left; max-width: 100%;
 }
+.toast .ti { flex: none; font-size: 14px; line-height: 1.45; }
+.toast .tm { flex: 1; min-width: 0; white-space: pre-line; word-break: break-word; }
+
+/* 成功：淡入 + 边框泛绿 */
 .toast.ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); color: var(--ok); }
 .toast.gold { border-color: color-mix(in srgb, var(--gold) 45%, transparent); color: var(--gold); }
+
+/* 警告 / 失败：淡入后再抖一下，让人一眼看出"这次没成" */
+.toast.warn,
+.toast.bad { animation: toastin .28s cubic-bezier(.33,1,.68,1), toastshake .5s .30s; }
+.toast.warn { border-color: color-mix(in srgb, var(--warn) 45%, transparent); color: var(--warn); }
+.toast.bad { border-color: color-mix(in srgb, var(--danger) 50%, transparent); color: var(--danger); }
+
 .toast.out { animation: toastout .3s forwards; }
 @keyframes toastin { from { transform: translateY(14px); opacity: 0 } to { transform: none; opacity: 1 } }
 @keyframes toastout { to { transform: translateY(-8px); opacity: 0 } }
+@keyframes toastshake {
+  0%, 100% { transform: translateX(0) }
+  15% { transform: translateX(-7px) }
+  35% { transform: translateX(6px) }
+  55% { transform: translateX(-4px) }
+  75% { transform: translateX(3px) }
+}
 
 /* ---------------------------------------------------------------- 引导页 / 空态 */
 
@@ -914,6 +933,25 @@ table.cb-table th:first-child, table.cb-table td:first-child { position: sticky;
 
 .empty { text-align: center; padding: 56px 24px; color: var(--text-faint); }
 .empty .e { font-size: 42px; margin-bottom: var(--md); }
+
+/* 错误页：人话在前，技术细节折叠在后面 */
+.err-actions {
+  display: flex; gap: 12px; align-items: center; justify-content: center;
+  flex-wrap: wrap; margin-top: 20px;
+}
+.err-actions .btn { margin: 0; }
+.link-btn {
+  background: none; border: 0; padding: 6px 2px; cursor: pointer;
+  color: var(--accent); font: inherit; font-size: 13px; text-decoration: underline;
+}
+.err-detail {
+  margin: 14px auto 0; max-width: 520px; text-align: left;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 10px 12px;
+  font-size: 11.5px; line-height: 1.6; color: var(--text-faint);
+  white-space: pre-wrap; word-break: break-all;
+  max-height: 180px; overflow: auto;
+}
 
 /* 骨架屏 */
 .skeleton {

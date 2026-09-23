@@ -3,9 +3,9 @@
  "packId": "knowledge_continent",
  "version": "1.1.0",
  "title": "知识大陆",
- "updatedAt": "2026-09-23T20:30:36+08:00",
+ "updatedAt": "2026-09-23T20:37:53+08:00",
  "levelsUrl": "levels.json",
- "sha256": "40d24d4e2490ed154d626c6168810d8ccf1e1f8fc60df9e4613022a0e40ffcc8",
+ "sha256": "f157211f4aa2100920e90eec12fe0105b199bcaa581b9d73c83f6046a7d9870d",
  "bytes": 694440,
  "summary": {
   "stages": 1,

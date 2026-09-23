@@ -8,7 +8,7 @@
  *   两个目标都满足。
  * ========================================================================== */
 
-const VERSION = 'kc-v1.0.5';
+const VERSION = 'kc-v1.0.6';
 const STATIC_CACHE = `${VERSION}-static`;
 const PACK_CACHE = `${VERSION}-pack`;
 
