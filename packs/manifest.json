@@ -1,26 +1,26 @@
 {
  "schemaVersion": 1,
  "packId": "knowledge_continent",
- "version": "1.1.2",
+ "version": "1.1.3",
  "title": "知识大陆",
- "updatedAt": "2026-09-23T22:11:03+08:00",
+ "updatedAt": "2026-09-24T14:41:41+08:00",
  "levelsUrl": "levels.json",
- "sha256": "de4a3ac0753fa773406b5750a36436c63da089298a69619488983a5f2c8ab4fd",
- "contentHash": "1c203bdba1758e1965102de7b552be0866189815f992586dbfc1a5053c9e13bf",
+ "sha256": "7d52d60aae95c57e03bcc88a8a0029917c5bacce67d57f4f85f4f264440e2ed7",
+ "contentHash": "d9ae8c7c2bf5150b2cb8703cbbf36d72867cb2b62429f21fa7666e4579ab0867",
  "versionBumped": true,
- "bytes": 1135147,
+ "bytes": 1718018,
  "summary": {
   "stages": 2,
-  "levels": 30,
-  "points": 141,
-  "quizzes": 399,
+  "levels": 66,
+  "points": 319,
+  "quizzes": 462,
   "quizzesByType": {
-   "single": 134,
-   "boolean": 107,
-   "fill": 97,
+   "single": 159,
+   "boolean": 128,
+   "fill": 114,
    "subjective": 56,
    "multiple": 5
   },
-  "playableLevels": 29
+  "playableLevels": 30
  }
 }
